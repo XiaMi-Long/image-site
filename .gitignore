@@ -1,9 +1,9 @@
 node_modules/
 dist/
 .env
-uploads/originals/*
-uploads/displays/*
-!uploads/originals/.gitkeep
-!uploads/displays/.gitkeep
+server/uploads/originals/*
+server/uploads/displays/*
+!server/uploads/originals/.gitkeep
+!server/uploads/displays/.gitkeep
 *.log
 .DS_Store
