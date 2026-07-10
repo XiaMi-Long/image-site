@@ -1,4 +1,28 @@
+import axios from 'axios';
+
 const API_BASE = '/api';
+
+const http = axios.create({ baseURL: API_BASE, headers: { 'Content-Type': 'application/json' } });
+
+// Attach auth token
+http.interceptors.request.use((cfg) => {
+  const token = localStorage.getItem('token');
+  if (token) cfg.headers.Authorization = `Bearer ${token}`;
+  return cfg;
+});
+
+// Normalize errors + handle 401
+http.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/admin/login';
+    }
+    const msg = err.response?.data?.error || err.message || '请求失败';
+    return Promise.reject(new Error(msg));
+  },
+);
 
 export interface ImageItem {
   id: string;
@@ -44,77 +68,36 @@ export interface TagItem {
   count: number;
 }
 
-async function request<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${url}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(localStorage.getItem('token')
-        ? { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        : {}),
-      ...(options?.headers || {}),
-    },
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: '请求失败' }));
-    throw new Error(err.error || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
 export const imageApi = {
-  list: (params: { page?: number; limit?: number; search?: string; albumId?: string; tag?: string } = {}) => {
-    const q = new URLSearchParams();
-    if (params.page) q.set('page', String(params.page));
-    if (params.limit) q.set('limit', String(params.limit));
-    if (params.search) q.set('search', params.search);
-    if (params.albumId) q.set('albumId', params.albumId);
-    if (params.tag) q.set('tag', params.tag);
-    return request<ListResult>(`/images?${q.toString()}`);
-  },
-  get: (id: string) => request<ImageItem>(`/images/${id}`),
+  list: (params: { page?: number; limit?: number; search?: string; albumId?: string; tag?: string; sortBy?: string; sortOrder?: string } = {}) =>
+    http.get<ListResult>('/images', { params }).then((r) => r.data),
+  get: (id: string) => http.get<ImageItem>(`/images/${id}`).then((r) => r.data),
   download: (id: string) => `${API_BASE}/images/${id}/download`,
-  upload: (formData: FormData) => {
-    return fetch(`${API_BASE}/images`, {
-      method: 'POST',
-      headers: {
-        ...(localStorage.getItem('token')
-          ? { Authorization: `Bearer ${localStorage.getItem('token')}` }
-          : {}),
-      },
-      body: formData,
-    }).then(async (res) => {
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: '上传失败' }));
-        throw new Error(err.error || `HTTP ${res.status}`);
-      }
-      return res.json();
-    });
-  },
+  upload: (formData: FormData) =>
+    http.post('/images', formData).then((r) => r.data),
   update: (id: string, data: Partial<Pick<ImageItem, 'title' | 'description' | 'albumId' | 'tags'>>) =>
-    request<ImageItem>(`/images/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  remove: (id: string) => request<{ message: string }>(`/images/${id}`, { method: 'DELETE' }),
+    http.patch<ImageItem>(`/images/${id}`, data).then((r) => r.data),
+  remove: (id: string) => http.delete<{ message: string }>(`/images/${id}`).then((r) => r.data),
+  crop: (id: string, data: { x: number; y: number; width: number; height: number; rotation: number }) =>
+    http.post<ImageItem>(`/images/${id}/crop`, data).then((r) => r.data),
 };
 
 export const albumApi = {
-  list: () => request<{ data: AlbumItem[] }>(`/albums`).then((r) => r.data),
-  get: (id: string) => request<AlbumItem>(`/albums/${id}`),
+  list: () => http.get<{ data: AlbumItem[] }>('/albums').then((r) => r.data.data),
+  get: (id: string) => http.get<AlbumItem>(`/albums/${id}`).then((r) => r.data),
   create: (data: { name: string; description?: string }) =>
-    request<AlbumItem>(`/albums`, { method: 'POST', body: JSON.stringify(data) }),
+    http.post<AlbumItem>('/albums', data).then((r) => r.data),
   update: (id: string, data: Partial<AlbumItem>) =>
-    request<AlbumItem>(`/albums/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  remove: (id: string) => request<{ message: string }>(`/albums/${id}`, { method: 'DELETE' }),
+    http.patch<AlbumItem>(`/albums/${id}`, data).then((r) => r.data),
+  remove: (id: string) => http.delete<{ message: string }>(`/albums/${id}`).then((r) => r.data),
 };
 
 export const tagApi = {
-  list: () => request<{ data: TagItem[] }>(`/tags`).then((r) => r.data),
+  list: () => http.get<{ data: TagItem[] }>('/tags').then((r) => r.data.data),
 };
 
 export const authApi = {
   login: (username: string, password: string) =>
-    request<{ token: string; username: string }>(`/auth/login`, {
-      method: 'POST',
-      body: JSON.stringify({ username, password }),
-    }),
-  me: () => request<{ valid: boolean; username?: string }>(`/auth/me`),
+    http.post<{ token: string; username: string }>('/auth/login', { username, password }).then((r) => r.data),
+  me: () => http.get<{ valid: boolean; username?: string }>('/auth/me').then((r) => r.data),
 };

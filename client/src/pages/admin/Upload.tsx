@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { imageApi, albumApi, type AlbumItem } from '../../lib/api';
-import { useAuth } from '../../store/auth';
 import UploadDropzone from '../../components/UploadDropzone';
 import Select from '../../components/Select';
 import { formatBytes } from '../../lib/utils';
@@ -14,13 +13,13 @@ interface PendingItem {
 }
 
 export default function Upload() {
-  const navigate = useNavigate();
-  const { logout } = useAuth();
   const [albums, setAlbums] = useState<AlbumItem[]>([]);
   const [albumId, setAlbumId] = useState<string>('');
   const [tags, setTags] = useState('');
   const [items, setItems] = useState<PendingItem[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [batchPrefix, setBatchPrefix] = useState('');
+  const [batchPrefixOpen, setBatchPrefixOpen] = useState(false);
 
   useEffect(() => {
     albumApi.list().then(setAlbums).catch(() => {});
@@ -88,26 +87,20 @@ export default function Upload() {
     setUploading(false);
   };
 
+  const applyBatchRename = () => {
+    const prefix = batchPrefix.trim();
+    if (!prefix) return;
+    setItems((prev) => prev.map((it, i) => ({ ...it, title: `${prefix} ${i + 1}` })));
+    setBatchPrefixOpen(false);
+  };
+
   const doneCount = items.filter((i) => i.status === 'done').length;
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8 md:px-12 md:py-12">
       {/* 顶栏 */}
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8">
         <h1 className="text-2xl font-bold text-text">上传作品</h1>
-        <div className="flex items-center gap-2">
-          <Link to="/admin/manage" className="btn-outline text-xs">管理</Link>
-          <Link to="/admin/albums" className="btn-outline text-xs">相册</Link>
-          <button
-            onClick={() => {
-              logout();
-              navigate('/');
-            }}
-            className="btn-outline text-xs"
-          >
-            退出
-          </button>
-        </div>
       </div>
 
       {/* 上传区 */}
@@ -142,51 +135,82 @@ export default function Upload() {
       {/* 待上传列表 */}
       {items.length > 0 && (
         <div className="mt-8">
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <span className="text-sm text-muted">待上传 {items.length} 项 · 已完成 {doneCount}</span>
-            <button
-              onClick={uploadAll}
-              disabled={uploading || doneCount === items.length}
-              className="btn-primary"
-            >
-              {uploading ? '上传中…' : '开始上传'}
-            </button>
+            <div className="flex items-center gap-2">
+              {batchPrefixOpen ? (
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={batchPrefix}
+                    onChange={(e) => setBatchPrefix(e.target.value)}
+                    placeholder="输入前缀…"
+                    className="input-field h-8 w-32 text-xs"
+                    autoFocus
+                    onKeyDown={(e) => e.key === 'Enter' && applyBatchRename()}
+                  />
+                  <button onClick={applyBatchRename} className="btn-primary text-xs h-8">应用</button>
+                  <button onClick={() => setBatchPrefixOpen(false)} className="btn-outline text-xs h-8">取消</button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setBatchPrefixOpen(true)}
+                  disabled={uploading || items.length === 0}
+                  className="btn-outline text-xs"
+                >
+                  统一命名
+                </button>
+              )}
+              <button
+                onClick={uploadAll}
+                disabled={uploading || doneCount === items.length}
+                className="btn-primary"
+              >
+                {uploading ? '上传中…' : '开始上传'}
+              </button>
+            </div>
           </div>
 
           <div className="space-y-1.5">
-            {items.map((it, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-3 rounded border border-border bg-surface p-2.5"
-              >
-                <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded bg-canvas">
-                  <img src={URL.createObjectURL(it.file)} alt="" className="h-full w-full object-cover" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <input
-                    type="text"
-                    value={it.title}
-                    onChange={(e) => updateTitle(i, e.target.value)}
-                    disabled={it.status === 'done'}
-                    className="w-full border-b border-transparent bg-transparent py-0.5 text-sm text-text focus:border-accent focus:outline-none"
-                  />
-                  <div className="mt-0.5 text-xs text-muted">
-                    {formatBytes(it.file.size)}
-                    {it.status === 'error' && <span className="ml-2 text-red-500">{it.message}</span>}
+            <AnimatePresence>
+              {items.map((it, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                  className="flex items-center gap-3 rounded border border-border bg-surface p-2.5"
+                >
+                  <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded bg-canvas">
+                    <img src={URL.createObjectURL(it.file)} alt="" className="h-full w-full object-cover" />
                   </div>
-                </div>
-                <div className="w-16 shrink-0 text-right text-xs">
-                  {it.status === 'pending' && (
-                    <button onClick={() => removeItem(i)} className="text-muted hover:text-red-500">
-                      移除
-                    </button>
-                  )}
-                  {it.status === 'uploading' && <span className="text-accent">上传中</span>}
-                  {it.status === 'done' && <span className="text-green-600">完成</span>}
-                  {it.status === 'error' && <span className="text-red-500">失败</span>}
-                </div>
-              </div>
-            ))}
+                  <div className="flex-1 min-w-0">
+                    <input
+                      type="text"
+                      value={it.title}
+                      onChange={(e) => updateTitle(i, e.target.value)}
+                      disabled={it.status === 'done'}
+                      className="w-full border-b border-transparent bg-transparent py-0.5 text-sm text-text focus:border-accent focus:outline-none"
+                    />
+                    <div className="mt-0.5 text-xs text-muted">
+                      {formatBytes(it.file.size)}
+                      {it.status === 'error' && <span className="ml-2 text-red-500">{it.message}</span>}
+                    </div>
+                  </div>
+                  <div className="w-16 shrink-0 text-right text-xs">
+                    {it.status === 'pending' && (
+                      <button onClick={() => removeItem(i)} className="text-muted hover:text-red-500">
+                        移除
+                      </button>
+                    )}
+                    {it.status === 'uploading' && <span className="text-accent">上传中</span>}
+                    {it.status === 'done' && <span className="text-green-600">完成</span>}
+                    {it.status === 'error' && <span className="text-red-500">失败</span>}
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         </div>
       )}

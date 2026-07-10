@@ -5,7 +5,7 @@ import { Album } from '../models/Album.js';
 import { config } from '../config.js';
 import { authMiddleware, AuthRequest } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
-import { saveImage, deleteImage } from '../utils/storage.js';
+import { saveImage, deleteImage, deleteFiles, findOrphanedFiles, removeOrphanedFiles, cropDisplay } from '../utils/storage.js';
 import mongoose from 'mongoose';
 
 const router = Router();
@@ -66,13 +66,20 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   const page = Math.max(1, parseInt(String(req.query.page)) || 1);
   const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit)) || 24));
   const q = buildQuery(req);
-
   const isTextSearch = !!q.$text;
+
+  // Sort support
+  const sortBy = String(req.query.sortBy || 'createdAt');
+  const sortOrder = String(req.query.sortOrder || 'desc') === 'asc' ? 1 : -1;
+  const allowedSort = ['title', 'fileName', 'size', 'createdAt', 'updatedAt'];
+  const sort: Record<string, 1 | -1> = allowedSort.includes(sortBy)
+    ? { [sortBy]: sortOrder }
+    : { createdAt: -1 };
 
   const [images, total] = await Promise.all([
     isTextSearch
       ? Image.find(q, { score: { $meta: 'textScore' } }).sort({ score: { $meta: 'textScore' } }).skip((page - 1) * limit).limit(limit).lean()
-      : Image.find(q).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+      : Image.find(q).sort(sort).skip((page - 1) * limit).limit(limit).lean(),
     Image.countDocuments(q),
   ]);
 
@@ -138,14 +145,20 @@ router.post('/', authMiddleware, upload.array('images', 50), async (req: AuthReq
   const results = await Promise.allSettled(
     files.map(async (file, i) => {
       const saved = await saveImage(file.buffer, file.originalname, file.mimetype);
-      const image = await Image.create({
-        title: titles[i] || file.originalname.replace(/\.[^.]+$/, ''),
-        description: '',
-        ...saved,
-        albumId,
-        tags,
-      });
-      return toPublic(image.toObject() as LeanImage);
+      try {
+        const image = await Image.create({
+          title: titles[i] || file.originalname.replace(/\.[^.]+$/, ''),
+          description: '',
+          ...saved,
+          albumId,
+          tags,
+        });
+        return toPublic(image.toObject() as LeanImage);
+      } catch (err) {
+        // saveImage 已写入文件，但 DB 写入失败 → 清理残留
+        await deleteFiles([saved.originalPath, saved.displayPath]);
+        throw err;
+      }
     }),
   );
 
@@ -189,6 +202,40 @@ router.patch('/:id', authMiddleware, async (req: AuthRequest, res: Response) => 
 });
 
 /**
+ * 鉴权：裁剪/旋转图片（基于原图重新生成展示图）
+ * POST /api/images/:id/crop
+ * Body: { x, y, width, height, rotation }
+ */
+router.post('/:id/crop', authMiddleware, async (req: AuthRequest, res: Response) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    res.status(400).json({ error: '无效的 ID' });
+    return;
+  }
+  const image = await Image.findById(req.params.id);
+  if (!image) {
+    res.status(404).json({ error: '图片不存在' });
+    return;
+  }
+
+  const { x, y, width, height, rotation } = req.body;
+  if (typeof x !== 'number' || typeof y !== 'number' || typeof width !== 'number' || typeof height !== 'number') {
+    res.status(400).json({ error: '参数错误，需要 x, y, width, height' });
+    return;
+  }
+
+  const newDisplaySize = await cropDisplay(image.originalPath, image.displayPath, {
+    x, y, width, height,
+    rotation: typeof rotation === 'number' ? rotation : 0,
+  });
+
+  image.displaySize = newDisplaySize;
+  await image.save();
+
+  const updated = await Image.findById(image._id).lean() as LeanImage | null;
+  res.json(toPublic(updated!));
+});
+
+/**
  * 鉴权：删除图片
  */
 router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
@@ -204,6 +251,32 @@ router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response) =>
   await deleteImage(image.originalPath, image.displayPath);
   await image.deleteOne();
   res.json({ message: '删除成功' });
+});
+
+/**
+ * 鉴权：扫描孤立文件（未被任何 Image 记录引用的上传文件）
+ * GET /api/images/gc/scan
+ */
+router.get('/gc/scan', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const images = await Image.find({}).select('originalPath displayPath').lean();
+  const referenced = images.flatMap((img) => [img.originalPath, img.displayPath]);
+  const orphaned = await findOrphanedFiles(referenced);
+  res.json(orphaned);
+});
+
+/**
+ * 鉴权：删除孤立文件
+ * POST /api/images/gc/cleanup
+ * Body: { originals: string[], displays: string[] }
+ */
+router.post('/gc/cleanup', authMiddleware, async (req: AuthRequest, res: Response) => {
+  const { originals, displays } = req.body;
+  if (!Array.isArray(originals) || !Array.isArray(displays)) {
+    res.status(400).json({ error: '参数错误，需要 originals 和 displays 数组' });
+    return;
+  }
+  await removeOrphanedFiles(originals, displays);
+  res.json({ message: `清理完成，删除了 ${originals.length + displays.length} 个文件` });
 });
 
 export default router;

@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { albumApi, type AlbumItem } from '../../lib/api';
-import { useAuth } from '../../store/auth';
 import { formatDate } from '../../lib/utils';
 import { Skeleton } from '../../components/Skeleton';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { useToast } from '../../components/Toast';
 
 export default function Albums() {
-  const navigate = useNavigate();
-  const { logout } = useAuth();
   const { toast } = useToast();
   const [albums, setAlbums] = useState<AlbumItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +44,7 @@ export default function Albums() {
     if (!confirmDeleteId) return;
     try {
       await albumApi.remove(confirmDeleteId.id);
-      load();
+      setAlbums((prev) => prev.filter((a) => a.id !== confirmDeleteId.id));
       toast('success', '相册已删除');
     } catch (err: any) {
       toast('error', err.message || '删除失败');
@@ -83,18 +81,8 @@ export default function Albums() {
   return (
     <div className="mx-auto max-w-5xl px-6 py-8 md:px-12 md:py-12">
       {/* 顶栏 */}
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8">
         <h1 className="text-xl font-bold text-text">相册管理</h1>
-        <div className="flex items-center gap-2">
-          <Link to="/admin/upload" className="btn-outline text-xs">上传</Link>
-          <Link to="/admin/manage" className="btn-outline text-xs">作品</Link>
-          <button
-            onClick={() => { logout(); navigate('/'); }}
-            className="btn-outline text-xs"
-          >
-            退出
-          </button>
-        </div>
       </div>
 
       <div className="mb-6">
@@ -132,13 +120,22 @@ export default function Albums() {
       )}
 
       {albums.length === 0 ? (
-        <div className="flex min-h-[30vh] flex-col items-center justify-center gap-3">
+        <div className="flex min-h-[30vh] flex-col items-center justify-center gap-4">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--muted))" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+          </svg>
           <div className="text-base font-bold text-text">还没有相册</div>
         </div>
       ) : (
         <div className="space-y-1.5">
-          {albums.map((a) => (
-            <div key={a.id} className="flex items-center gap-4 rounded border border-border bg-surface p-3">
+          <AnimatePresence>
+            {albums.map((a) => (
+            <motion.div
+              key={a.id}
+              layout
+              exit={{ opacity: 0, x: -20, transition: { duration: 0.15 } }}
+              className="flex items-center gap-4 rounded border border-border bg-surface p-3"
+            >
               <Link to={`/album/${a.id}`} className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium text-text hover:text-accent">{a.name}</div>
                 {a.description && <div className="mt-0.5 truncate text-xs text-muted">{a.description}</div>}
@@ -152,8 +149,9 @@ export default function Albums() {
               >
                 删除
               </button>
-            </div>
+            </motion.div>
           ))}
+          </AnimatePresence>
         </div>
       )}
 

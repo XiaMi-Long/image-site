@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { motion } from 'framer-motion';
 import type { ImageItem } from '../lib/api';
 
 interface Props {
@@ -12,6 +13,23 @@ interface Props {
 export default function Lightbox({ images, index, onClose, onPrev, onNext }: Props) {
   const [showOriginal, setShowOriginal] = useState(false);
   const image = images[index];
+  const thumbRef = useRef<HTMLDivElement>(null);
+
+  // Preload adjacent images
+  useEffect(() => {
+    const urls: string[] = [];
+    if (index > 0) urls.push(images[index - 1].displayUrl);
+    if (index < images.length - 1) urls.push(images[index + 1].displayUrl);
+    urls.forEach((url) => { const img = new Image(); img.src = url; });
+  }, [index, images]);
+
+  // Scroll thumbnail into view
+  useEffect(() => {
+    if (thumbRef.current) {
+      const el = thumbRef.current.children[index] as HTMLElement | undefined;
+      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [index]);
 
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
@@ -39,7 +57,12 @@ export default function Lightbox({ images, index, onClose, onPrev, onNext }: Pro
   if (!image) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black/95">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.15 }}
+      className="fixed inset-0 z-50 flex flex-col bg-black/95">
       {/* 顶部工具栏 */}
       <div className="flex items-center justify-between px-4 py-3 text-white/80">
         <div className="flex items-baseline gap-3">
@@ -73,7 +96,7 @@ export default function Lightbox({ images, index, onClose, onPrev, onNext }: Pro
       </div>
 
       {/* 图片区 */}
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden px-4 pb-4">
+      <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden px-4">
         <button
           onClick={onPrev}
           disabled={index === 0}
@@ -104,9 +127,35 @@ export default function Lightbox({ images, index, onClose, onPrev, onNext }: Pro
         </button>
       </div>
 
-      {/* 底部信息 */}
+      {/* 底部缩略图条 */}
+      {images.length > 1 && (
+        <div
+          ref={thumbRef}
+          className="flex gap-1 overflow-x-auto px-4 py-2"
+          style={{ scrollbarWidth: 'none' }}
+        >
+          {images.map((img, i) => (
+            <button
+              key={img.id}
+              onClick={() => {
+                const delta = i - index;
+                if (delta > 0) for (let j = 0; j < delta; j++) onNext();
+                else for (let j = 0; j < -delta; j++) onPrev();
+              }}
+              className={`shrink-0 overflow-hidden rounded border-2 transition-all duration-150 ${
+                i === index ? 'border-accent opacity-100' : 'border-transparent opacity-50 hover:opacity-80'
+              }`}
+              style={{ height: 48 }}
+            >
+              <img src={img.displayUrl} alt="" className="h-full w-auto object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* 标签 */}
       {image.tags.length > 0 && (
-        <div className="px-4 py-3 text-white/60">
+        <div className="px-4 pb-2 text-white/60">
           <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2 text-xs">
             {image.tags.map((t) => (
               <span key={t} className="text-white/50">#{t}</span>
@@ -117,6 +166,6 @@ export default function Lightbox({ images, index, onClose, onPrev, onNext }: Pro
       <div className="px-4 pb-3 text-right text-[10px] text-white/30">
         {showOriginal ? '原图' : '压缩图'} · O 键切换
       </div>
-    </div>
+    </motion.div>
   );
 }

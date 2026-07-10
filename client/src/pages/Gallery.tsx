@@ -4,6 +4,7 @@ import { imageApi, albumApi, tagApi, type ImageItem, type AlbumItem, type TagIte
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import ImageGrid from '../components/ImageGrid';
 import { GridSkeleton, Skeleton } from '../components/Skeleton';
+import { useCachedApi } from '../hooks/useCachedApi';
 
 interface Props {
   onImageClick: (images: ImageItem[], index: number) => void;
@@ -15,12 +16,13 @@ export default function Gallery({ onImageClick }: Props) {
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [albums, setAlbums] = useState<AlbumItem[]>([]);
-  const [tags, setTags] = useState<TagItem[]>([]);
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [albumError, setAlbumError] = useState<string | null>(null);
-  const [tagError, setTagError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const { data: albumsData } = useCachedApi('gallery-albums', () => albumApi.list());
+  const { data: tagsData } = useCachedApi('gallery-tags', () => tagApi.list());
+  const albums = albumsData ?? [];
+  const tags = tagsData ?? [];
 
   const loadImages = useCallback(async (pageNum: number) => {
     const res = await imageApi.list({ page: pageNum, limit: 24, tag: activeTag || undefined });
@@ -40,11 +42,6 @@ export default function Gallery({ onImageClick }: Props) {
       setError(e.message || '加载失败');
     }).finally(() => setLoading(false));
   }, [loadImages]);
-
-  useEffect(() => {
-    albumApi.list().then(setAlbums).catch((e) => setAlbumError(e.message));
-    tagApi.list().then(setTags).catch((e) => setTagError(e.message));
-  }, []);
 
   const loadMore = async () => {
     if (loadingMore || !hasMore) return;
@@ -93,11 +90,6 @@ export default function Gallery({ onImageClick }: Props) {
       </div>
 
       {/* 相册导航 */}
-      {albumError && (
-        <div className="mb-6 rounded border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-500">
-          相册加载失败: {albumError}
-        </div>
-      )}
       {albums.length > 0 && (
         <div className="mb-8">
           <div className="mb-3 flex flex-wrap gap-2">
@@ -116,11 +108,7 @@ export default function Gallery({ onImageClick }: Props) {
       )}
 
       {/* 标签筛选 */}
-      {tagError ? (
-        <div className="mb-6 rounded border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-500">
-          标签加载失败: {tagError}
-        </div>
-      ) : tags.length > 0 && (
+      {tags.length > 0 && (
         <div className="mb-8">
           <div className="flex flex-wrap gap-1.5">
             <button
@@ -147,7 +135,12 @@ export default function Gallery({ onImageClick }: Props) {
       )}
 
       {images.length === 0 ? (
-        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3">
+        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="rgb(var(--muted))" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <path d="M21 15l-5-5L5 21" />
+          </svg>
           <div className="text-lg font-bold text-text">还没有作品</div>
           <p className="text-sm text-muted">去上传你的第一张图片</p>
         </div>
@@ -160,7 +153,7 @@ export default function Gallery({ onImageClick }: Props) {
           <div ref={sentinelRef} className="h-8" />
           {loadingMore && (
             <div className="py-6 text-center">
-              <span className="text-sm text-muted">载入更多…</span>
+              <span className="text-sm text-muted animate-pulse">载入更多…</span>
             </div>
           )}
         </>
