@@ -28,7 +28,32 @@
       "Bash(taskkill /F /PID 26336)",
       "Bash(taskkill /F /PID 22312)",
       "Bash(taskkill //F //PID 26336)",
-      "Bash(taskkill //F //PID 22312)"
+      "Bash(taskkill //F //PID 22312)",
+      "Bash(sshpass *)",
+      "Bash(apt-get --version)",
+      "Bash(choco --version)",
+      "Bash(python3 -c \"import pexpect; print\\('pexpect ok'\\)\")",
+      "Bash(python -c \"import pexpect; print\\('pexpect ok'\\)\")",
+      "Bash(expect -v)",
+      "Bash(pip install *)",
+      "Bash(scoop --version)",
+      "Bash(chmod +x /tmp/sshpass)",
+      "Bash(/tmp/sshpass -V)",
+      "Bash(pacman --version)",
+      "Bash(apt --version)",
+      "Bash(dnf --version)",
+      "Bash(yum --version)",
+      "Bash(apk --version)",
+      "Bash(gcc --version)",
+      "Bash(tar czf *)",
+      "Read(//tmp/**)",
+      "Bash(cmd //c \"echo %TEMP%\")",
+      "Bash(cygpath -w /tmp)",
+      "Bash(pwd -W)",
+      "Bash(realpath /tmp)",
+      "Bash(cmd //c \"for %I in \\(C:\\\\Users\\\\yitao\\\\AppData\\\\Local\\\\Temp\\\\image-site-nginx.conf\\) do echo %~aI %~zI\")",
+      "Bash(cmd //c \"dir C:\\\\Users\\\\yitao\\\\AppData\\\\Local\\\\Temp\\\\image-site-nginx.conf\")",
+      "Bash(base64 -w0)"
     ]
   }
 }
