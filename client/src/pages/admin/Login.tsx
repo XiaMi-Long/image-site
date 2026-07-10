@@ -27,16 +27,15 @@ export default function Login() {
   };
 
   return (
-    <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-6 py-16">
-      <div className="mb-12 text-center">
-        <span className="text-xs font-bold uppercase tracking-widest2 text-accent">Admin</span>
-        <h1 className="mt-4 font-display text-5xl font-bold text-text">登录</h1>
-        <p className="mt-3 text-sm text-muted">仅管理员可访问后台</p>
+    <div className="mx-auto flex min-h-[80vh] max-w-sm flex-col justify-center px-6 py-16">
+      <div className="mb-10 text-center">
+        <h1 className="mb-2 text-2xl font-bold text-text">管理员登录</h1>
+        <p className="text-sm text-muted">仅管理员可访问后台</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="label-tag mb-2 block">用户名</label>
+          <label className="label-tag mb-1.5 block">用户名</label>
           <input
             type="text"
             value={username}
@@ -47,7 +46,7 @@ export default function Login() {
           />
         </div>
         <div>
-          <label className="label-tag mb-2 block">密码</label>
+          <label className="label-tag mb-1.5 block">密码</label>
           <input
             type="password"
             value={password}
@@ -59,19 +58,19 @@ export default function Login() {
         </div>
 
         {error && (
-          <div className="border-l-2 border-red-500 bg-red-500/5 px-4 py-3 text-sm text-red-600">
+          <div className="rounded border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-500">
             {error}
           </div>
         )}
 
         <button type="submit" disabled={loading} className="btn-primary w-full">
-          {loading ? '登录中…' : '登 录'}
+          {loading ? '登录中…' : '登录'}
         </button>
       </form>
 
       <div className="mt-8 text-center">
-        <Link to="/" className="text-xs uppercase tracking-widest2 text-muted hover:text-accent">
-          ← 返回画廊
+        <Link to="/" className="text-sm text-muted transition-colors hover:text-accent">
+          返回首页
         </Link>
       </div>
     </div>

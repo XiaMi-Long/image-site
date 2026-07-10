@@ -11,14 +11,14 @@ import Manage from './pages/admin/Manage';
 import Albums from './pages/admin/Albums';
 import Lightbox from './components/Lightbox';
 import type { ImageItem } from './lib/api';
-import { useAuth } from './store/auth';
+import { useAuth, AuthProvider } from './store/auth';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthed, checking } = useAuth();
   if (checking) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <span className="font-display text-xl text-muted">验证中…</span>
+        <span className="text-sm text-muted">验证中…</span>
       </div>
     );
   }
@@ -45,31 +45,33 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen">
-      <Navbar />
-      <main className="pt-20">
-        <Routes>
-          <Route path="/" element={<Gallery onImageClick={openLightbox} />} />
-          <Route path="/album/:id" element={<AlbumView onImageClick={openLightbox} />} />
-          <Route path="/search" element={<Search onImageClick={openLightbox} />} />
-          <Route path="/image/:id" element={<ImageDetail />} />
-          <Route path="/admin/login" element={<Login />} />
-          <Route path="/admin/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
-          <Route path="/admin/manage" element={<ProtectedRoute><Manage /></ProtectedRoute>} />
-          <Route path="/admin/albums" element={<ProtectedRoute><Albums /></ProtectedRoute>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
+    <AuthProvider>
+      <div className="min-h-screen">
+        <Navbar />
+        <main className="pt-14 page-enter">
+          <Routes>
+            <Route path="/" element={<Gallery onImageClick={openLightbox} />} />
+            <Route path="/album/:id" element={<AlbumView onImageClick={openLightbox} />} />
+            <Route path="/search" element={<Search onImageClick={openLightbox} />} />
+            <Route path="/image/:id" element={<ImageDetail />} />
+            <Route path="/admin/login" element={<Login />} />
+            <Route path="/admin/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
+            <Route path="/admin/manage" element={<ProtectedRoute><Manage /></ProtectedRoute>} />
+            <Route path="/admin/albums" element={<ProtectedRoute><Albums /></ProtectedRoute>} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
 
-      {lightbox && (
-        <Lightbox
-          images={lightbox.images}
-          index={lightbox.index}
-          onClose={closeLightbox}
-          onPrev={prev}
-          onNext={next}
-        />
-      )}
-    </div>
+        {lightbox && (
+          <Lightbox
+            images={lightbox.images}
+            index={lightbox.index}
+            onClose={closeLightbox}
+            onPrev={prev}
+            onNext={next}
+          />
+        )}
+      </div>
+    </AuthProvider>
   );
 }

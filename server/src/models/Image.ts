@@ -36,6 +36,7 @@ const imageSchema = new Schema<IImage>(
 );
 
 imageSchema.index({ createdAt: -1 });
-imageSchema.index({ title: 'text' });
+imageSchema.index({ title: 'text', description: 'text', tags: 'text' }, { weights: { title: 10, tags: 5, description: 1 }, name: 'search_text' });
+imageSchema.index({ title: 1 });
 
 export const Image = mongoose.model<IImage>('Image', imageSchema);

@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(npm run *)",
+      "Bash(mongosh --eval \"db.adminCommand\\('ping'\\)\")",
+      "Bash(netstat -ano)",
+      "Bash(curl -s http://localhost:4000/api/tags)",
+      "Bash(curl -s http://localhost:5173)",
+      "WebFetch(domain:wallhaven.cc)",
+      "WebSearch",
+      "Bash(npm *)",
+      "Bash(curl -s \"http://localhost:4000/api/images?search=Re0&limit=5\")",
+      "Bash(curl -s \"http://localhost:4000/api/tags\")",
+      "Bash(curl -s \"http://localhost:4000/api/images?search=test&limit=3\")",
+      "Bash(python -m json.tool)",
+      "Bash(curl -sv \"http://localhost:4000/api/images?search=test&limit=2\")",
+      "Bash(curl -s \"http://localhost:4000/api/images?limit=2\")",
+      "Bash(curl *)",
+      "Bash(node *)",
+      "Bash(npx tsc *)",
+      "Bash(lsof -ti:5173)",
+      "Bash(xargs kill *)",
+      "Bash(cmd.exe /c \"netstat -ano | findstr :5173\")",
+      "Bash(npx vite *)",
+      "Bash(cmd.exe /c \"netstat -ano | findstr :4000\")",
+      "Bash(cmd.exe /c \"netstat -ano | findstr :27017\")",
+      "Bash(taskkill /F /PID 26336)",
+      "Bash(taskkill /F /PID 22312)",
+      "Bash(taskkill //F //PID 26336)",
+      "Bash(taskkill //F //PID 22312)"
+    ]
+  }
+}

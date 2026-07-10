@@ -52,30 +52,27 @@ export default function AlbumView({ onImageClick }: Props) {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <span className="font-display text-xl text-muted">载入中…</span>
+        <span className="text-sm text-muted">载入中…</span>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-10 md:px-12 md:py-16">
-      <Link to="/" className="mb-8 inline-block text-xs uppercase tracking-widest2 text-muted hover:text-accent">
+    <div className="mx-auto max-w-7xl px-6 py-8 md:px-12 md:py-12">
+      <Link to="/" className="mb-6 inline-block text-xs text-muted hover:text-accent">
         ← 返回作品集
       </Link>
 
-      <div className="mb-12">
-        <span className="text-xs font-bold uppercase tracking-widest2 text-accent">Album</span>
-        <h1 className="mt-4 font-display text-5xl font-bold tracking-tight text-text md:text-7xl">
-          {album?.name || '相册'}
-        </h1>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-text">{album?.name || '相册'}</h1>
         {album?.description && (
-          <p className="mt-4 max-w-xl text-sm text-muted">{album.description}</p>
+          <p className="mt-1.5 max-w-xl text-sm text-muted">{album.description}</p>
         )}
       </div>
 
       {images.length === 0 ? (
-        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4">
-          <div className="font-display text-3xl font-bold text-text">相册暂无图片</div>
+        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3">
+          <div className="text-base font-bold text-text">相册暂无图片</div>
         </div>
       ) : (
         <>
@@ -83,7 +80,7 @@ export default function AlbumView({ onImageClick }: Props) {
             images={images}
             onImageClick={(img) => onImageClick(images, images.findIndex((i) => i.id === img.id))}
           />
-          <div ref={sentinelRef} className="h-12" />
+          <div ref={sentinelRef} className="h-8" />
         </>
       )}
     </div>

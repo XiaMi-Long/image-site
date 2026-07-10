@@ -5,15 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <title>画廊 · Gallery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <title>图片收集</title>
+    <meta name="description" content="个人图片收集站" />
     <script>
-      // 防闪烁：初始即应用主题
       (function () {
-        const saved = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const dark = saved ? saved === 'dark' : prefersDark;
-        if (dark) document.documentElement.classList.add('dark');
+        var saved = localStorage.getItem('theme');
+        var isLight = saved === 'light' || (saved !== 'dark' && !window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isLight) document.documentElement.classList.add('light');
       })();
     </script>
   </head>

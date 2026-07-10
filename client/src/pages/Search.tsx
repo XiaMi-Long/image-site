@@ -40,7 +40,6 @@ export default function Search({ onImageClick }: Props) {
   );
 
   useEffect(() => {
-    // 初始载入全部
     setLoading(true);
     loadImages(1, '').finally(() => setLoading(false));
   }, [loadImages]);
@@ -55,21 +54,15 @@ export default function Search({ onImageClick }: Props) {
   const sentinelRef = useInfiniteScroll(loadMore, hasMore, loadingMore);
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-10 md:px-12 md:py-16">
-      <div className="mb-12">
-        <span className="text-xs font-bold uppercase tracking-widest2 text-accent">Search</span>
-        <h1 className="mt-4 font-display text-5xl font-bold tracking-tight text-text md:text-7xl">
-          搜 索
-        </h1>
-      </div>
+    <div className="mx-auto max-w-7xl px-6 py-8 md:px-12 md:py-12">
+      <h1 className="mb-6 text-2xl font-bold text-text md:text-3xl">搜索</h1>
 
-      {/* 搜索框 */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
           doSearch(query);
         }}
-        className="mb-12 flex gap-3"
+        className="mb-8 flex gap-3"
       >
         <input
           type="text"
@@ -84,18 +77,18 @@ export default function Search({ onImageClick }: Props) {
       </form>
 
       {searched && committed && (
-        <div className="mb-8 text-sm text-muted">
-          {loading ? '搜索中…' : `找到 ${images.length} 件与「${committed}」相关的作品`}
+        <div className="mb-6 text-sm text-muted">
+          {loading ? '搜索中…' : `找到 ${images.length} 个与「${committed}」相关的结果`}
         </div>
       )}
 
       {loading ? (
         <div className="flex min-h-[30vh] items-center justify-center">
-          <span className="font-display text-xl text-muted">载入中…</span>
+          <span className="text-sm text-muted">载入中…</span>
         </div>
       ) : images.length === 0 ? (
-        <div className="flex min-h-[30vh] flex-col items-center justify-center gap-4">
-          <div className="font-display text-3xl font-bold text-text">未找到作品</div>
+        <div className="flex min-h-[30vh] flex-col items-center justify-center gap-3">
+          <div className="text-base font-bold text-text">未找到作品</div>
           <p className="text-sm text-muted">试试其他关键词</p>
         </div>
       ) : (
@@ -104,7 +97,7 @@ export default function Search({ onImageClick }: Props) {
             images={images}
             onImageClick={(img) => onImageClick(images, images.findIndex((i) => i.id === img.id))}
           />
-          <div ref={sentinelRef} className="h-12" />
+          <div ref={sentinelRef} className="h-8" />
         </>
       )}
     </div>

@@ -7,6 +7,7 @@ export default {
       colors: {
         canvas: 'rgb(var(--canvas) / <alpha-value>)',
         surface: 'rgb(var(--surface) / <alpha-value>)',
+        elevated: 'rgb(var(--elevated) / <alpha-value>)',
         text: 'rgb(var(--text) / <alpha-value>)',
         muted: 'rgb(var(--muted) / <alpha-value>)',
         border: 'rgb(var(--border) / <alpha-value>)',
@@ -14,11 +15,7 @@ export default {
         accentHover: 'rgb(var(--accent-hover) / <alpha-value>)',
       },
       fontFamily: {
-        display: ['"Cormorant Garamond"', 'Georgia', 'serif'],
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-      },
-      letterSpacing: {
-        widest2: '0.3em',
+        sans: ['Inter', 'system-ui', 'PingFang SC', 'Noto Sans SC', 'sans-serif'],
       },
     },
   },

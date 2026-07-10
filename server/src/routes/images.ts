@@ -12,15 +12,24 @@ const router = Router();
 
 type LeanImage = Omit<IImage, 'save' | 'deleteOne'> & { _id: mongoose.Types.ObjectId };
 
+function hasCJK(text: string): boolean {
+  return /[一-鿿㐀-䶿豈-﫿]/.test(text);
+}
+
 function buildQuery(req: AuthRequest) {
   const q: any = {};
   const { search, albumId, tag } = req.query;
   if (search) {
-    q.$or = [
-      { title: { $regex: String(search), $options: 'i' } },
-      { description: { $regex: String(search), $options: 'i' } },
-      { tags: { $regex: String(search), $options: 'i' } },
-    ];
+    const term = String(search);
+    if (hasCJK(term)) {
+      q.$or = [
+        { title: { $regex: term, $options: 'i' } },
+        { description: { $regex: term, $options: 'i' } },
+        { tags: { $regex: term, $options: 'i' } },
+      ];
+    } else {
+      q.$text = { $search: term };
+    }
   }
   if (albumId && mongoose.isValidObjectId(albumId)) {
     q.albumId = new mongoose.Types.ObjectId(String(albumId));
@@ -58,8 +67,12 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit)) || 24));
   const q = buildQuery(req);
 
+  const isTextSearch = !!q.$text;
+
   const [images, total] = await Promise.all([
-    Image.find(q).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+    isTextSearch
+      ? Image.find(q, { score: { $meta: 'textScore' } }).sort({ score: { $meta: 'textScore' } }).skip((page - 1) * limit).limit(limit).lean()
+      : Image.find(q).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
     Image.countDocuments(q),
   ]);
 
@@ -122,10 +135,8 @@ router.post('/', authMiddleware, upload.array('images', 50), async (req: AuthReq
   const tags = req.body.tags ? (Array.isArray(req.body.tags) ? req.body.tags : String(req.body.tags).split(',').map((t: string) => t.trim()).filter(Boolean)) : [];
   const albumId = req.body.albumId && mongoose.isValidObjectId(req.body.albumId) ? new mongoose.Types.ObjectId(String(req.body.albumId)) : null;
 
-  const results = [];
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    try {
+  const results = await Promise.allSettled(
+    files.map(async (file, i) => {
       const saved = await saveImage(file.buffer, file.originalname, file.mimetype);
       const image = await Image.create({
         title: titles[i] || file.originalname.replace(/\.[^.]+$/, ''),
@@ -134,18 +145,22 @@ router.post('/', authMiddleware, upload.array('images', 50), async (req: AuthReq
         albumId,
         tags,
       });
-      results.push(toPublic(image.toObject() as LeanImage));
-    } catch (err: any) {
-      results.push({ error: err.message, fileName: file.originalname });
-    }
-  }
+      return toPublic(image.toObject() as LeanImage);
+    }),
+  );
+
+  const processedResults = results.map((r, i) => {
+    if (r.status === 'fulfilled') return r.value;
+    return { error: r.reason?.message || '上传失败', fileName: files[i].originalname };
+  });
 
   // 若指定了相册且相册无封面，则用第一张作为封面
-  if (albumId && results[0] && !results[0].error) {
-    await Album.findByIdAndUpdate(albumId, { $set: { coverImageId: results[0].id } }, { new: true });
+  if (albumId && processedResults[0] && !('error' in processedResults[0])) {
+    const first = processedResults[0] as ReturnType<typeof toPublic>;
+    await Album.findByIdAndUpdate(albumId, { $set: { coverImageId: first.id } }, { new: true });
   }
 
-  res.status(201).json({ data: results });
+  res.status(201).json({ data: processedResults });
 });
 
 /**

@@ -19,30 +19,30 @@ export default function ImageDetail() {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <span className="font-display text-xl text-muted">载入中…</span>
+        <span className="text-sm text-muted">载入中…</span>
       </div>
     );
   }
 
   if (!image) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
-        <div className="font-display text-3xl font-bold text-text">图片不存在</div>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
+        <div className="text-base font-bold text-text">图片不存在</div>
         <Link to="/" className="text-sm text-accent">← 返回作品集</Link>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10 md:px-12 md:py-16">
+    <div className="mx-auto max-w-6xl px-6 py-8 md:px-12 md:py-12">
       <button
         onClick={() => navigate(-1)}
-        className="mb-8 inline-block text-xs uppercase tracking-widest2 text-muted hover:text-accent"
+        className="mb-6 inline-block text-xs text-muted hover:text-accent"
       >
         ← 返回
       </button>
 
-      <div className="grid gap-10 md:grid-cols-[1fr_320px]">
+      <div className="grid gap-8 md:grid-cols-[1fr_300px]">
         {/* 图片 */}
         <div className="bg-surface">
           <img
@@ -53,28 +53,28 @@ export default function ImageDetail() {
         </div>
 
         {/* 信息 */}
-        <aside className="space-y-6">
+        <aside className="space-y-5">
           <div>
-            <span className="label-tag">Title</span>
-            <h1 className="mt-2 font-display text-4xl font-bold text-text">{image.title}</h1>
+            <span className="label-tag">标题</span>
+            <h1 className="mt-1.5 text-xl font-bold text-text">{image.title}</h1>
           </div>
 
           {image.description && (
             <div>
-              <span className="label-tag">Description</span>
-              <p className="mt-2 text-sm text-text">{image.description}</p>
+              <span className="label-tag">描述</span>
+              <p className="mt-1.5 text-sm text-text">{image.description}</p>
             </div>
           )}
 
           {image.tags.length > 0 && (
             <div>
-              <span className="label-tag">Tags</span>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <span className="label-tag">标签</span>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {image.tags.map((t) => (
                   <Link
                     key={t}
                     to={`/search?q=${encodeURIComponent(t)}`}
-                    className="border border-border px-3 py-1 text-[11px] uppercase tracking-widest2 text-text hover:border-accent hover:text-accent"
+                    className="rounded border border-border px-2 py-0.5 text-xs text-text hover:border-accent hover:text-accent"
                   >
                     #{t}
                   </Link>
@@ -83,7 +83,7 @@ export default function ImageDetail() {
             </div>
           )}
 
-          <div className="space-y-2 border-t border-border pt-6 text-xs">
+          <div className="space-y-1.5 border-t border-border pt-5 text-xs">
             <div className="flex justify-between text-muted">
               <span>文件名</span>
               <span className="text-text">{image.fileName}</span>
@@ -111,11 +111,11 @@ export default function ImageDetail() {
           <div className="space-y-2">
             <button
               onClick={() => setShowOriginal((s) => !s)}
-              className="btn-outline w-full"
+              className="btn-outline w-full text-xs"
             >
               {showOriginal ? '查看压缩图' : '查看原图'}
             </button>
-            <a href={image.downloadUrl} download className="btn-primary w-full">
+            <a href={image.downloadUrl} download className="btn-primary w-full text-xs">
               下载原图
             </a>
           </div>

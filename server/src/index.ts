@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import mongoose from 'mongoose';
 import { config } from './config.js';
 import { connectDB } from './db.js';
 import { seedAdmin } from './routes/auth.js';
@@ -33,6 +34,17 @@ app.use(errorMiddleware);
 async function main() {
   await connectDB();
   await seedAdmin();
+  // Drop old single-field text index, let Mongoose create compound
+  try {
+    const col = mongoose.connection.db?.collection('images');
+    if (col) {
+      const hasOld = await col.indexExists('title_text');
+      if (hasOld) {
+        await col.dropIndex('title_text');
+        await mongoose.model('Image').ensureIndexes();
+      }
+    }
+  } catch { /* non-fatal: $regex fallback still works */ }
   app.listen(config.port, () => {
     console.log(`[server] http://localhost:${config.port}`);
   });

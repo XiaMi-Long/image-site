@@ -43,49 +43,66 @@ export default function Upload() {
   };
 
   const uploadAll = async () => {
-    if (items.length === 0) return;
+    const totalItems = items.length;
+    if (totalItems === 0) return;
     setUploading(true);
 
-    // 逐个上传，便于显示进度
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].status === 'done') continue;
-      setItems((prev) => prev.map((it, j) => (j === i ? { ...it, status: 'uploading' } : it)));
-      const fd = new FormData();
-      fd.append('images', items[i].file);
-      fd.append('titles', items[i].title);
-      if (albumId) fd.append('albumId', albumId);
-      if (tags.trim()) fd.append('tags', tags.trim());
-      try {
-        await imageApi.upload(fd);
-        setItems((prev) => prev.map((it, j) => (j === i ? { ...it, status: 'done' } : it)));
-      } catch (err: any) {
-        setItems((prev) =>
-          prev.map((it, j) => (j === i ? { ...it, status: 'error', message: err.message } : it)),
+    const CONCURRENCY = 5;
+
+    for (let start = 0; start < totalItems; start += CONCURRENCY) {
+      const end = Math.min(start + CONCURRENCY, totalItems);
+
+      for (let i = start; i < end; i++) {
+        if (items[i].status === 'done') continue;
+        const idx = i;
+        setItems((prev) => prev.map((it, j) => (j === idx ? { ...it, status: 'uploading' } : it)));
+      }
+
+      const promises = [];
+      for (let i = start; i < end; i++) {
+        if (items[i].status === 'done') continue;
+        const idx = i;
+        const fd = new FormData();
+        fd.append('images', items[i].file);
+        fd.append('titles', items[i].title);
+        if (albumId) fd.append('albumId', albumId);
+        if (tags.trim()) fd.append('tags', tags.trim());
+        promises.push(
+          imageApi
+            .upload(fd)
+            .then(() =>
+              setItems((prev) => prev.map((it, j) => (j === idx ? { ...it, status: 'done' } : it))),
+            )
+            .catch((err) =>
+              setItems((prev) =>
+                prev.map((it, j) => (j === idx ? { ...it, status: 'error', message: err.message } : it)),
+              ),
+            ),
         );
       }
+
+      await Promise.allSettled(promises);
     }
+
     setUploading(false);
   };
 
   const doneCount = items.filter((i) => i.status === 'done').length;
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10 md:px-12 md:py-16">
+    <div className="mx-auto max-w-5xl px-6 py-8 md:px-12 md:py-12">
       {/* 顶栏 */}
-      <div className="mb-10 flex items-center justify-between">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-widest2 text-accent">Admin</span>
-          <h1 className="mt-2 font-display text-4xl font-bold text-text">上传作品</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link to="/admin/manage" className="btn-outline">管理</Link>
-          <Link to="/admin/albums" className="btn-outline">相册</Link>
+      <div className="mb-8 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-text">上传作品</h1>
+        <div className="flex items-center gap-2">
+          <Link to="/admin/manage" className="btn-outline text-xs">管理</Link>
+          <Link to="/admin/albums" className="btn-outline text-xs">相册</Link>
           <button
             onClick={() => {
               logout();
               navigate('/');
             }}
-            className="btn-outline"
+            className="btn-outline text-xs"
           >
             退出
           </button>
@@ -96,13 +113,13 @@ export default function Upload() {
       <UploadDropzone onFiles={handleFiles} />
 
       {/* 配置 */}
-      <div className="mt-8 grid gap-6 md:grid-cols-2">
+      <div className="mt-6 grid gap-5 md:grid-cols-2">
         <div>
-          <label className="label-tag mb-2 block">归入相册（可选）</label>
+          <label className="label-tag mb-1.5 block">归入相册</label>
           <select
             value={albumId}
             onChange={(e) => setAlbumId(e.target.value)}
-            className="input-field cursor-pointer"
+            className="select-field"
           >
             <option value="">不归入任何相册</option>
             {albums.map((a) => (
@@ -111,7 +128,7 @@ export default function Upload() {
           </select>
         </div>
         <div>
-          <label className="label-tag mb-2 block">标签（逗号分隔）</label>
+          <label className="label-tag mb-1.5 block">标签（逗号分隔）</label>
           <input
             type="text"
             value={tags}
@@ -124,9 +141,9 @@ export default function Upload() {
 
       {/* 待上传列表 */}
       {items.length > 0 && (
-        <div className="mt-10">
-          <div className="mb-4 flex items-center justify-between">
-            <span className="label-tag">待上传 {items.length} 项 · 已完成 {doneCount}</span>
+        <div className="mt-8">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-sm text-muted">待上传 {items.length} 项 · 已完成 {doneCount}</span>
             <button
               onClick={uploadAll}
               disabled={uploading || doneCount === items.length}
@@ -136,37 +153,37 @@ export default function Upload() {
             </button>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {items.map((it, i) => (
               <div
                 key={i}
-                className="flex items-center gap-4 border border-border bg-surface p-3"
+                className="flex items-center gap-3 rounded border border-border bg-surface p-2.5"
               >
-                <div className="h-16 w-16 flex-shrink-0 overflow-hidden bg-canvas">
+                <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded bg-canvas">
                   <img src={URL.createObjectURL(it.file)} alt="" className="h-full w-full object-cover" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <input
                     type="text"
                     value={it.title}
                     onChange={(e) => updateTitle(i, e.target.value)}
                     disabled={it.status === 'done'}
-                    className="w-full border-b border-transparent bg-transparent py-1 font-display text-lg text-text focus:border-accent focus:outline-none"
+                    className="w-full border-b border-transparent bg-transparent py-0.5 text-sm text-text focus:border-accent focus:outline-none"
                   />
-                  <div className="mt-1 text-xs text-muted">
+                  <div className="mt-0.5 text-xs text-muted">
                     {formatBytes(it.file.size)}
                     {it.status === 'error' && <span className="ml-2 text-red-500">{it.message}</span>}
                   </div>
                 </div>
-                <div className="w-20 text-right">
+                <div className="w-16 shrink-0 text-right text-xs">
                   {it.status === 'pending' && (
-                    <button onClick={() => removeItem(i)} className="text-xs uppercase tracking-widest2 text-muted hover:text-red-500">
+                    <button onClick={() => removeItem(i)} className="text-muted hover:text-red-500">
                       移除
                     </button>
                   )}
-                  {it.status === 'uploading' && <span className="text-xs text-accent">上传中</span>}
-                  {it.status === 'done' && <span className="text-xs text-green-600">✓ 完成</span>}
-                  {it.status === 'error' && <span className="text-xs text-red-500">失败</span>}
+                  {it.status === 'uploading' && <span className="text-accent">上传中</span>}
+                  {it.status === 'done' && <span className="text-green-600">完成</span>}
+                  {it.status === 'error' && <span className="text-red-500">失败</span>}
                 </div>
               </div>
             ))}
