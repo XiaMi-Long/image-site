@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { imageApi, albumApi, type AlbumItem } from '../../lib/api';
 import { useAuth } from '../../store/auth';
 import UploadDropzone from '../../components/UploadDropzone';
+import Select from '../../components/Select';
 import { formatBytes } from '../../lib/utils';
 
 interface PendingItem {
@@ -116,16 +117,15 @@ export default function Upload() {
       <div className="mt-6 grid gap-5 md:grid-cols-2">
         <div>
           <label className="label-tag mb-1.5 block">归入相册</label>
-          <select
+          <Select
             value={albumId}
-            onChange={(e) => setAlbumId(e.target.value)}
-            className="select-field"
-          >
-            <option value="">不归入任何相册</option>
-            {albums.map((a) => (
-              <option key={a.id} value={a.id}>{a.name}</option>
-            ))}
-          </select>
+            onChange={setAlbumId}
+            options={[
+              { value: '', label: '不归入任何相册' },
+              ...albums.map((a) => ({ value: a.id, label: a.name })),
+            ]}
+            placeholder="不归入任何相册"
+          />
         </div>
         <div>
           <label className="label-tag mb-1.5 block">标签（逗号分隔）</label>

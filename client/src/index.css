@@ -132,3 +132,23 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* 光晕漂移动画 */
+@keyframes drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(6%, 4%) scale(1.05); }
+  66% { transform: translate(3%, -3%) scale(0.95); }
+}
+@keyframes drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-5%, -3%) scale(1.03); }
+  66% { transform: translate(4%, 5%) scale(0.97); }
+}
+@keyframes drift-3 {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  33% { transform: translate(-45%, -55%) scale(1.08); }
+  66% { transform: translate(-55%, -48%) scale(0.92); }
+}
+.animate-drift-1 { animation: drift-1 35s ease-in-out infinite; }
+.animate-drift-2 { animation: drift-2 45s ease-in-out infinite; }
+.animate-drift-3 { animation: drift-3 55s ease-in-out infinite; }

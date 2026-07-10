@@ -2,6 +2,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { imageApi, type ImageItem } from '../lib/api';
 import { formatBytes, formatDate } from '../lib/utils';
+import { Skeleton } from '../components/Skeleton';
 
 export default function ImageDetail() {
   const { id } = useParams<{ id: string }>();
@@ -18,8 +19,24 @@ export default function ImageDetail() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <span className="text-sm text-muted">载入中…</span>
+      <div className="mx-auto max-w-6xl px-6 py-8 md:px-12 md:py-12">
+        <Skeleton className="mb-6 h-4 w-16" />
+        <div className="grid gap-8 md:grid-cols-[1fr_300px]">
+          <Skeleton className="aspect-[4/3] w-full" />
+          <div className="space-y-5">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+            <div className="space-y-1.5 border-t border-border pt-5">
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-2/3" />
+            </div>
+            <Skeleton className="h-10 w-full rounded-md" />
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
+        </div>
       </div>
     );
   }

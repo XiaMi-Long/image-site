@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { imageApi, albumApi, type ImageItem, type AlbumItem } from '../lib/api';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import ImageGrid from '../components/ImageGrid';
+import { GridSkeleton, Skeleton } from '../components/Skeleton';
 
 interface Props {
   onImageClick: (images: ImageItem[], index: number) => void;
@@ -51,8 +52,10 @@ export default function AlbumView({ onImageClick }: Props) {
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <span className="text-sm text-muted">载入中…</span>
+      <div className="mx-auto max-w-7xl px-6 py-8 md:px-12 md:py-12">
+        <Skeleton className="mb-6 h-4 w-24" />
+        <Skeleton className="mb-8 h-7 w-48" />
+        <GridSkeleton count={12} />
       </div>
     );
   }

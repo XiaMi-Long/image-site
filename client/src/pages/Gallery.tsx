@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { imageApi, albumApi, tagApi, type ImageItem, type AlbumItem, type TagItem } from '../lib/api';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import ImageGrid from '../components/ImageGrid';
+import { GridSkeleton, Skeleton } from '../components/Skeleton';
 
 interface Props {
   onImageClick: (images: ImageItem[], index: number) => void;
@@ -19,6 +20,7 @@ export default function Gallery({ onImageClick }: Props) {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [albumError, setAlbumError] = useState<string | null>(null);
   const [tagError, setTagError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const loadImages = useCallback(async (pageNum: number) => {
     const res = await imageApi.list({ page: pageNum, limit: 24, tag: activeTag || undefined });
@@ -32,8 +34,11 @@ export default function Gallery({ onImageClick }: Props) {
   }, [activeTag]);
 
   useEffect(() => {
+    setError(null);
     setLoading(true);
-    loadImages(1).finally(() => setLoading(false));
+    loadImages(1).catch((e: Error) => {
+      setError(e.message || '加载失败');
+    }).finally(() => setLoading(false));
   }, [loadImages]);
 
   useEffect(() => {
@@ -52,8 +57,30 @@ export default function Gallery({ onImageClick }: Props) {
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <span className="text-sm text-muted">载入中…</span>
+      <div className="mx-auto max-w-7xl px-6 py-8 md:px-12 md:py-12">
+        <div className="mb-8">
+          <Skeleton className="h-7 w-20" />
+        </div>
+        <div className="mb-8">
+          <div className="flex flex-wrap gap-2">
+            <Skeleton className="h-8 w-16 rounded" />
+            <Skeleton className="h-8 w-24 rounded" />
+            <Skeleton className="h-8 w-20 rounded" />
+          </div>
+        </div>
+        <GridSkeleton count={12} />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
+        <div className="text-base font-bold text-text">加载失败</div>
+        <p className="text-sm text-muted">{error}</p>
+        <button onClick={() => window.location.reload()} className="btn-primary text-xs">
+          刷新页面
+        </button>
       </div>
     );
   }

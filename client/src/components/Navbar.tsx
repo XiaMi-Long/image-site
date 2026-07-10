@@ -1,5 +1,4 @@
 import { Link, NavLink } from 'react-router-dom';
-import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../store/auth';
 
 export default function Navbar() {
@@ -43,7 +42,6 @@ export default function Navbar() {
           >
             {isAuthed ? '管理' : '后台'}
           </NavLink>
-          <ThemeToggle />
         </div>
       </nav>
     </header>

@@ -1,6 +1,9 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useState, useCallback } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import Navbar from './components/Navbar';
+import BackgroundEffect from './components/BackgroundEffect';
+import PageTransition from './components/PageTransition';
 import Gallery from './pages/Gallery';
 import AlbumView from './pages/AlbumView';
 import Search from './pages/Search';
@@ -12,6 +15,7 @@ import Albums from './pages/admin/Albums';
 import Lightbox from './components/Lightbox';
 import type { ImageItem } from './lib/api';
 import { useAuth, AuthProvider } from './store/auth';
+import { ToastProvider } from './components/Toast';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthed, checking } = useAuth();
@@ -27,6 +31,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const location = useLocation();
   // 全局 Lightbox 状态
   const [lightbox, setLightbox] = useState<{ images: ImageItem[]; index: number } | null>(null);
 
@@ -46,20 +51,24 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <div className="min-h-screen">
-        <Navbar />
-        <main className="pt-14 page-enter">
-          <Routes>
-            <Route path="/" element={<Gallery onImageClick={openLightbox} />} />
-            <Route path="/album/:id" element={<AlbumView onImageClick={openLightbox} />} />
-            <Route path="/search" element={<Search onImageClick={openLightbox} />} />
-            <Route path="/image/:id" element={<ImageDetail />} />
-            <Route path="/admin/login" element={<Login />} />
-            <Route path="/admin/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
-            <Route path="/admin/manage" element={<ProtectedRoute><Manage /></ProtectedRoute>} />
-            <Route path="/admin/albums" element={<ProtectedRoute><Albums /></ProtectedRoute>} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+      <ToastProvider>
+        <div className="min-h-screen">
+          <BackgroundEffect />
+          <Navbar />
+        <main className="pt-14">
+          <AnimatePresence mode="wait">
+            <Routes location={location} key={location.pathname}>
+              <Route path="/" element={<PageTransition><Gallery onImageClick={openLightbox} /></PageTransition>} />
+              <Route path="/album/:id" element={<PageTransition><AlbumView onImageClick={openLightbox} /></PageTransition>} />
+              <Route path="/search" element={<PageTransition><Search onImageClick={openLightbox} /></PageTransition>} />
+              <Route path="/image/:id" element={<PageTransition><ImageDetail /></PageTransition>} />
+              <Route path="/admin/login" element={<PageTransition><Login /></PageTransition>} />
+              <Route path="/admin/upload" element={<PageTransition><ProtectedRoute><Upload /></ProtectedRoute></PageTransition>} />
+              <Route path="/admin/manage" element={<PageTransition><ProtectedRoute><Manage /></ProtectedRoute></PageTransition>} />
+              <Route path="/admin/albums" element={<PageTransition><ProtectedRoute><Albums /></ProtectedRoute></PageTransition>} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </AnimatePresence>
         </main>
 
         {lightbox && (
@@ -71,7 +80,8 @@ export default function App() {
             onNext={next}
           />
         )}
-      </div>
-    </AuthProvider>
+        </div>
+        </ToastProvider>
+      </AuthProvider>
   );
 }

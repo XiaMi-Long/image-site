@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { imageApi, type ImageItem } from '../lib/api';
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import ImageGrid from '../components/ImageGrid';
+import { GridSkeleton } from '../components/Skeleton';
 
 interface Props {
   onImageClick: (images: ImageItem[], index: number) => void;
@@ -83,9 +84,7 @@ export default function Search({ onImageClick }: Props) {
       )}
 
       {loading ? (
-        <div className="flex min-h-[30vh] items-center justify-center">
-          <span className="text-sm text-muted">载入中…</span>
-        </div>
+        <GridSkeleton count={12} />
       ) : images.length === 0 ? (
         <div className="flex min-h-[30vh] flex-col items-center justify-center gap-3">
           <div className="text-base font-bold text-text">未找到作品</div>
